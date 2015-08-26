@@ -146,9 +146,13 @@ function process_marker(ctx, device)
 
 	-- process usage count, if any
 	local usage = get_snmp(device, "Printer-MIB::prtMarkerLifeCount.%s.%s", marker)
+	local usage_hp = get_snmp(device, "HP-LASERJET-COMMON-MIB::total-engine-page-count.0")
 	if usage then
 		ctx:set("usage", usage)
 		ctx:set("usage.unit", get_snmp(device, "Printer-MIB::prtMarkerCounterUnit.%s.%s", marker))
+	elseif usage_hp then
+		ctx:set("usage", usage_hp)
+		ctx:set("usage.unit", "impressions")
 	end
 end
 
