@@ -143,6 +143,13 @@ function process_marker(ctx, device)
 		supply_ctx = util.clone(ctx):descend(false, { "supply", supply })
 		process_supply(supply_ctx, device)
 	end
+
+	-- process usage count, if any
+	local usage = get_snmp(device, "Printer-MIB::prtMarkerLifeCount.%s.%s", marker)
+	if usage then
+		ctx:set("usage", usage)
+		ctx:set("usage.unit", get_snmp(device, "Printer-MIB::prtMarkerCounterUnit.%s.%s", marker))
+	end
 end
 
 function process_device(ctx, device)
