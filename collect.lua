@@ -4,6 +4,16 @@ util = require("util")
 db = require("db")
 log = require("log")
 
+function postprocess_snmp(name, type, value)
+	if type == "INTEGER" then
+		value = string.match(value, "(.*)%([0-9]+%)") or value
+	elseif type == "STRING" then
+		value = string.match(value, "\"(.*)\"") or value
+	end
+
+	return name, type, value
+end
+
 function parse_snmp_iter(state)
 	local line = state.iter(state.state)
 
@@ -19,28 +29,21 @@ function parse_snmp_iter(state)
 		dbg("transformed line: '%s'", line)
 	end
 
-	local response = {} -- name, type, value
+	local response = {}
 
-	response = { string.match(line, "^= (.+): (.+)$") }
+	response = { string.match(line, "^= (.+): (.+)$") } -- type, value
 	if response[1] then
-		return "", unpack(response) -- single instance (get-style) response
+		return postprocess_snmp("", unpack(response)) -- single instance (get-style) response
 	end
 
-	response = { string.match(line, "^(.*) = No Such Instance .*$") }
+	response = { string.match(line, "^(.*) = No Such Instance .*$") } -- name
 	if response[1] then
 		return unpack(response) -- "No Such Instance" response
 	end
 
-	response = { string.match(line, "^(.+) = (.+): (.+)$") }
+	response = { string.match(line, "^(.+) = (.+): (.+)$") } -- name, type, value
 	if response[1] then
-
-		if response[2] == "INTEGER" then
-			response[3] = string.match(response[3], "(.*)%([0-9]+%)") or response[3]
-		elseif response[2] == "STRING" then
-			response[3] = string.match(response[3], "\"(.*)\"") or response[3]
-		end
-
-		return unpack(response) -- normal response
+		return postprocess_snmp(unpack(response)) -- normal response
 	end
 
 	log.W("bad line: '%s'", line)
