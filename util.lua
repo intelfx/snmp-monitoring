@@ -26,7 +26,7 @@ if os.getenv("FRAMEWORK_DEBUG") then
 	end, "cr")
 
 	function util.dbg(fmt, ...)
-		return printf("DBG [%s]: " .. fmt, dbg_info[#dbg_info], ...)
+		return printf("DBG [%-20s]: " .. fmt, dbg_info[#dbg_info - 1] or "(top level)", ...)
 	end
 else
 	function util.dbg(fmt, ...)
