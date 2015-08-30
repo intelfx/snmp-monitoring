@@ -96,4 +96,85 @@ function util.read_all(path)
 	return data
 end
 
+function util.last(arg)
+	return arg[#arg]
+end
+
+function util.set_last(arg, value)
+	arg[#arg] = value
+	return value
+end
+
+local function __util_dir_iter(state)
+	-- returned from last directory?
+	if #state.stack < 1 then
+		return nil
+	end
+
+	if #state.stack == #state.pieces + 1 then
+		-- entered new directory? create missing placeholder for the last path component
+		table.insert(state.pieces, {})
+	else
+		-- clear the placeholder for the last path component, including any user data
+		assert(#state.stack == #state.pieces)
+		util.set_last(state.pieces, {})
+	end
+
+	-- shortcuts
+	local stack_top = util.last(state.stack)
+	local pieces_top = util.last(state.pieces)
+
+	-- get next directory entry, skip . and ..
+	local key
+	repeat
+		key = stack_top.iter(stack_top.state)
+	until key ~= "." and key ~= ".."
+
+	-- no next directory entry? return from current directory
+	if not key then
+		table.remove(state.stack)
+		table.remove(state.pieces)
+		return __dir_iter(state)
+	end
+
+	local subpath = util.join(stack_top.subpath, key)
+	local subpath_abs = util.join(state.root, subpath)
+	local mode = lfs.attributes(subpath_abs, "mode")
+
+	-- fill in the last component of the subpath
+	pieces_top.key = key
+	pieces_top.subpath = subpath
+
+	if mode == "directory" then
+		-- descend (to never recover the pieces)
+		stack_top = { subpath = subpath }
+		stack_top.iter, stack_top.state = lfs.dir(subpath_abs)
+		table.insert(state.stack, stack_top)
+
+		if state.report_dirs then
+			-- return the directory itself, the subsequent call will continue into it
+			return subpath, mode, state
+		else
+			-- tailcall to return the first file in the directory
+			return __dir_iter(state)
+		end
+	else
+		-- return the read entry
+		return subpath, mode, state
+	end
+
+end
+
+function util.dir(path, report_dirs)
+	local state = { root = path, report_dirs = report_dirs and true or false, stack = { { subpath = "" } }, pieces = { } }
+
+	state.stack[1].iter, state.stack[1].state = lfs.dir(path) -- inner iterator
+	return __util_dir_iter, state
+end
+
+function util.dir_prune(state)
+	table.remove(state.stack)
+	table.remove(state.pieces)
+end
+
 return util
