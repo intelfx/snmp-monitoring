@@ -5,6 +5,9 @@ db = require("db")
 log = require("log")
 
 function postprocess_snmp(name, type, value)
+	local wrong_type_match = { string.match(type, "Wrong Type \(should be (%w+)\): (%w+)") }
+	type = wrong_type_match[2] or type
+
 	if type == "INTEGER" then
 		value = string.match(value, "(.*)%([0-9]+%)") or value
 	elseif type == "STRING" then
@@ -46,7 +49,7 @@ function parse_snmp_iter(state)
 		return postprocess_snmp("", unpack(response)) -- single instance (get-style) response
 	end
 
-	response = { string.match(line, "^(.+) = (.+): (.+)$") } -- name, type, value
+	response = { string.match(line, "^([%w%p]+) = (.+): (.+)$") } -- name, type, value
 	if response[1] then
 		return postprocess_snmp(unpack(response)) -- normal response
 	end
