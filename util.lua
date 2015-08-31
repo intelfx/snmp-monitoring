@@ -134,7 +134,7 @@ local function __util_dir_iter(state)
 	if not key then
 		table.remove(state.stack)
 		table.remove(state.pieces)
-		return __dir_iter(state)
+		return __util_dir_iter(state)
 	end
 
 	local subpath = util.join(stack_top.subpath, key)
@@ -156,7 +156,7 @@ local function __util_dir_iter(state)
 			return subpath, mode, state
 		else
 			-- tailcall to return the first file in the directory
-			return __dir_iter(state)
+			return __util_dir_iter(state)
 		end
 	else
 		-- return the read entry
