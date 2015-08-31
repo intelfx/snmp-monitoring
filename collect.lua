@@ -126,11 +126,13 @@ function process_supply(ctx, device)
 end
 
 function process_marker(ctx, device)
+	local marker = ctx:get("marker")
+
 	-- find those supplies which are 1) consumable and 2) of our marker
 	local current_supplies = {}
 	for name, type, value in walk_snmp(device, "Printer-MIB::prtMarkerSuppliesMarkerIndex.%s") do
 		dbg("supply %s belongs to marker %s", name, value)
-		if device.supplies[name] and value == ctx:get("marker") then
+		if device.supplies[name] and value == marker then
 			table.insert(current_supplies, name)
 		end
 	end
