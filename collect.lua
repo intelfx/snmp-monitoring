@@ -36,6 +36,11 @@ function parse_snmp_iter(state)
 		return nil -- single instance "No Such Instance" response
 	end
 
+	response = { string.match(line, "^= No Such Object ") } -- nothing useful
+	if response[1] then
+		return nil -- single instance "No Such Object" response
+	end
+
 	response = { string.match(line, "^= (.+): (.+)$") } -- type, value
 	if response[1] then
 		return postprocess_snmp("", unpack(response)) -- single instance (get-style) response
