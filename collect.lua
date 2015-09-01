@@ -115,7 +115,7 @@ end
 function process_supply(ctx, device)
 	local supply = ctx:get("supply")
 
-	ctx:set("_type",       get_snmp(device, "Printer-MIB::prtMarkerSuppliesType.%s.%s", supply))
+	ctx:set("type",       get_snmp(device, "Printer-MIB::prtMarkerSuppliesType.%s.%s", supply))
 	ctx:set("description", get_snmp(device, "Printer-MIB::prtMarkerSuppliesDescription.%s.%s", supply))
 	ctx:set("value",       get_snmp(device, "Printer-MIB::prtMarkerSuppliesLevel.%s.%s", supply))
 	ctx:set("max",         get_snmp(device, "Printer-MIB::prtMarkerSuppliesMaxCapacity.%s.%s", supply))
@@ -124,12 +124,10 @@ function process_supply(ctx, device)
 	local colorant = get_snmp(device, "Printer-MIB::prtMarkerSuppliesColorantIndex.%s.%s", supply)
 	if colorant and colorant ~= "0" then
 		ctx:set("color", get_snmp(device, "Printer-MIB::prtMarkerColorantValue.%s.%s", colorant))
-	end
 
-	if ctx:get("color") then
-		ctx:set("name", string.format("%s %s (%s)", ctx:get("color"), ctx:get("_type"), ctx:get("value.unit")))
+		ctx:set("stable_name", string.format("%s:%s", ctx:get("type"), ctx:get("color")))
 	else
-		ctx:set("name", string.format("%s (%s)", ctx:get("_type"), ctx:get("value.unit")))
+		ctx:set("stable_name", ctx:get("type"))
 	end
 end
 
