@@ -123,7 +123,7 @@ function process_supply(ctx, device)
 
 	local colorant = get_snmp(device, "Printer-MIB::prtMarkerSuppliesColorantIndex.%s.%s", supply)
 	if colorant and colorant ~= "0" then
-		ctx:set("color", get_snmp(device, "Printer-MIB::prtMarkerColorantValue.%s.%s", colorant))
+		ctx:set("color", string.lower(get_snmp(device, "Printer-MIB::prtMarkerColorantValue.%s.%s", colorant)))
 
 		ctx:set("stable_name", string.format("%s:%s", ctx:get("type"), ctx:get("color")))
 	else
