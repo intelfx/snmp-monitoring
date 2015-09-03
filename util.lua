@@ -35,12 +35,22 @@ end
 
 dbg = util.dbg
 
+function util.assert_eq(arg1, arg2)
+	assert(arg1 == arg2, string.format("assertion failed: '%s' ~= '%s'", tostring(arg1), tostring(arg2)))
+end
+
+assert_eq = util.assert_eq
+
 function util.is_string(arg)
 	return arg and type(arg) == "string"
 end
 
 function util.is_table(arg, n)
 	return arg and type(arg) == "table" and (not n or #arg == n)
+end
+
+function util.is_function(arg)
+	return arg and type(arg) == "function"
 end
 
 function util.clone(t) -- deep-copy a table
@@ -175,6 +185,80 @@ end
 function util.dir_prune(state)
 	table.remove(state.stack)
 	table.remove(state.pieces)
+end
+
+function util.assign_assert(tbl, index, value)
+	if tbl[index] then
+		assert_eq(tbl[index], value)
+	else
+		tbl[index] = value
+	end
+end
+
+function util.accumulate_max(tbl, index, value)
+	if not tbl[index] or value > tbl[index] then
+		tbl[index] = value
+	end
+end
+
+function util.table_join(lower, upper)
+	for k, v in pairs(upper) do
+		if util.is_table(v) and util.is_table(lower[k]) then
+			util.table_join(lower[k], v)
+		else
+			lower[k] = v
+		end
+	end
+
+	return lower
+end
+
+function util.table_join_assert(lower, upper)
+	for k, v in pairs(upper) do
+		if util.is_table(v) and util.is_table(lower[k]) then
+			util.table_join_assert(lower[k], v)
+		else
+			util.assign_assert(lower, k, v)
+		end
+	end
+
+	return lower
+end
+
+function util.in_set(arg, tbl)
+	for i, v in ipairs(tbl) do
+		if arg == v then
+			return i
+		end
+	end
+	return nil
+end
+
+function util.table_map(input, op)
+	local result = { }
+
+	if util.is_function(op) then
+		for k, v in pairs(input) do
+			result[k] = op(v)
+		end
+	else -- assume op to be field name to extract
+		for k, v in pairs(input) do
+			assert(util.is_table(v), "We're told to extract field '%s' from each entry of the table, but entry with key '%s' is a %s", tostring(op), tostring(k), type(v))
+			result[k] = v[op]
+		end
+	end
+
+	return result
+end
+
+function util.new(proto, object)
+	if not object then
+		object = { }
+	end
+
+	setmetatable(object, { __index = proto })
+
+	return object
 end
 
 return util
