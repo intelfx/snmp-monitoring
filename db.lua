@@ -142,11 +142,8 @@ end
 
 function db.set(ctx, key, value)
 	__db_check(ctx)
-	assert(not ctx.entries[key])
 
 	local path_abs = ctx:path_full_with(key)
-	assert(not lfs.attributes(path_abs, "mode"))
-
 	local file = io.open(path_abs, "w")
 	file:write(value)
 	file:close()
