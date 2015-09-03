@@ -261,4 +261,12 @@ function util.new(proto, object)
 	return object
 end
 
+function util.tonumber(arg)
+	if arg then
+		return assert(tonumber(arg))
+	else
+		return nil
+	end
+end
+
 return util
