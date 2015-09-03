@@ -48,7 +48,9 @@ function db.new(root)
 
 	local obj = { root = root, path = "", entries = {} }
 	setmetatable(obj, { __index = db })
-	return __db_check(obj)
+
+	__db_read(obj)
+	return obj
 end
 
 function db.root_with(ctx, ...)
