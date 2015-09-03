@@ -1,0 +1,22 @@
+{
+        "domain": [0, 1],
+        "titlefont": {
+            "color": "#444",
+            "family": "Courier New, monospace",
+            "size": 14
+        },
+        "tickfont": {
+            "color": "#444",
+            "family": "Courier New, monospace",
+            "size": 12
+        },
+        "showgrid": true,
+        "zeroline": false,
+        "showline": false,
+        "autoticks": true,
+        "showticklabels": true,
+        "exponentformat": "none",
+        "showexponent": "all",
+        "gridwidth": 1,
+	"gridcolor": "#eee"
+}

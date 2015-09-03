@@ -1,0 +1,36 @@
+{
+    "autosize": true,
+    "paper_bgcolor": "#fff",
+    "plot_bgcolor": "#fff",
+    "showlegend": true,
+    "separators": ". ",
+    "titlefont": {
+        "color": "#444",
+        "family": "Courier New, monospace",
+        "size": 18
+    },
+    "title": "Printer stats",
+    "font": {
+        "color": "#444",
+        "family": "Courier New, monospace",
+        "size": 12
+    },
+    "hidesources": false,
+    "legend": {
+        "bordercolor": "#444",
+        "yanchor": "auto",
+        "xref": "paper",
+        "xanchor": "left",
+        "yref": "paper",
+        "bgcolor": "rgb(255, 255, 255)",
+        "traceorder": "normal",
+        "borderwidth": 0.1,
+        "y": 0.5,
+        "x": 1.15,
+        "font": {
+            "color": "#444",
+            "family": "Courier New, monospace",
+            "size": 12
+        }
+    }
+}

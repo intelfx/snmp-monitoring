@@ -1,0 +1,14 @@
+{
+    "marker": {
+        "symbol": "circle",
+        "size": 6
+    },
+    "fill": "none",
+    "type": "scatter",
+    "line": {
+        "width": 1,
+        "dash": "solid",
+        "shape": "linear"
+    },
+    "connectgaps": true
+}

@@ -1,0 +1,14 @@
+{
+    "marker": {
+        "symbol": "circle",
+        "size": 6
+    },
+    "fill": "tozeroy",
+    "type": "scatter",
+    "line": {
+        "width": 2,
+        "dash": "solid",
+        "shape": "linear"
+    },
+    "connectgaps": true
+}
