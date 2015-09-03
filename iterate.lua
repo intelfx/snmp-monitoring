@@ -95,9 +95,9 @@ function ir_create_supply_in(ctx, tbl, index)
 	else
 		supply = { data = { } }
 		tbl[index] = supply
-		log.N("creating supply %s of type '%s' color '%s' by context path '%s'", ctx:get("stable_name"), dkjson.encode({ ctx:get("type") }), dkjson.encode({ ctx:get("color") }), ctx.path)
 	end
 
+	util.assign_assert(supply, "id", ctx:get("stable_name"))
 	util.assign_assert(supply, "type", ctx:get("type"))
 	util.assign_assert(supply, "color", ctx:get("color"))
 	util.assign_assert(supply, "description", ctx:get("description"))
@@ -210,6 +210,30 @@ function ir_postprocess_trace(trace)
 	table.sort(trace.data, function(a, b) return a.timestamp < b.timestamp end)
 	-- TODO: remove consecutive identical measurements for traces with imprecise units
 	-- (e. g. percent, but not impressions)
+
+	if util.in_set(trace.unit, { "percent" }) then
+		local last_v
+		local new_data = { }
+		for i, v in ipairs(trace.data) do
+			local next_v = trace.data[i+1]
+
+			if last_v and last_v.value == v.value and (next_v and next_v.value <= v.value) then
+				-- remove consecutive identical measurements if they are expected to be imprecise/rounded,
+				-- so we get a slope which spans over all the consecutive measurements instead of a sharp edge.
+				-- however, do not do this if we are followed by a positive front (which, for supplies, would mean a refill),
+				-- or if we are the last measurement in series.
+				local function fmtd(arg) return os.date("%F %T", arg/1000) end
+				dbg("last %s-> %s, removing %s -> %s, next %s -> %s",
+				    fmtd(last_v.timestamp), last_v.value, fmtd(v.timestamp), v.value, next_v and fmtd(next_v.timestamp) or "<n/a>", next_v and next_v.value or "<n/a>")
+			else
+				table.insert(new_data, v)
+				last_v = v
+			end
+		end
+
+		assert(#new_data <= #trace.data)
+		trace.data = new_data
+	end
 
 	--[[for i, v in pairs(trace.data) do
 		v.timestamp = os.date("%F %T", v.timestamp)
@@ -425,7 +449,7 @@ function render_device(ir_device)
 	if not config.plot_created then
 		-- create basic layout of the plot
 		json_output.layout = util.table_join(dkjson.decode(util.read_all("plotly-layout.json")), {
-			title = string.format("Statistics for %s", ir_device.id)
+			title = string.format("Statistics for %s", ir_device.name)
 		})
 	else
 		json_output.layout = { }
