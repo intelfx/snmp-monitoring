@@ -6,7 +6,11 @@ util = require("util")
 db = require("db")
 log = require("log")
 
-ctx = db.new("db")
+db_root = arg[1]
+assert(db_root, "Database root not given")
+log.N("database root is '%s'", db_root)
+
+ctx = db.new(db_root)
 
 -- this database is internally used by the renderer
 state_ctx = db.new("renderer-state")
@@ -16,7 +20,9 @@ state_cache = { } -- per-device-id state context cache
 -- and the Plot.ly JSON representation. It is intended to be "structurally almost identical" to the latter.
 ir_buffer = { }
 
+---------------------------------------------------------------------------------------------------
 -- state/config ops
+---------------------------------------------------------------------------------------------------
 
 function get_device_id(ctx)
 	return string.format("%s#%s", ctx:get("device"), ctx:get("marker"))
