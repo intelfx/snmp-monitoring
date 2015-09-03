@@ -287,7 +287,7 @@ function json_customize_y_axis_by_range(json_axis, config_axis)
 		-- we have at least one unbounded trace on this axis, enable autorange mode
 		json_axis.range = nil
 		json_axis.autorange = true
-		json_axis.fixedrange = false
+		json_axis.fixedrange = true
 	elseif config_axis.max then
 		-- set range and disengage autorange left from initial axis creation
 		json_axis.range = { 0, config_axis.max }
