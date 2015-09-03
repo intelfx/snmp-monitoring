@@ -59,7 +59,9 @@ function ir_measurement_is_recent(ctx)
 	local measurement_timestamp = util.tonumber(ctx:get("timestamp"))
 
 	if not state.last_timestamp or measurement_timestamp > state.last_timestamp then
-		state.last_timestamp_uncommitted = measurement_timestamp
+		if not state.last_timestamp_uncommitted or measurement_timestamp > state.last_timestamp_uncommitted then
+			state.last_timestamp_uncommitted = measurement_timestamp
+		end
 		dbg("Measurement at subpath '%s' is recent (%d > %d)", ctx.path, measurement_timestamp, state.last_timestamp or -1)
 		return true
 	else
