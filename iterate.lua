@@ -7,18 +7,67 @@ db = require("db")
 log = require("log")
 
 ctx = db.new("db")
-config_ctx = db.new("renderer-config")
+
+-- this database is internally used by the renderer
+state_ctx = db.new("renderer-state")
+state_cache = { } -- per-device-id state context cache
 
 -- this is a form of intermediate representation between the on-disk form structured for easy writing and human introspection
 -- and the Plot.ly JSON representation. It is intended to be "structurally almost identical" to the latter.
 ir_buffer = { }
+
+-- state/config ops
+
+function get_device_id(ctx)
+	return string.format("%s#%s", ctx:get("device"), ctx:get("marker"))
+end
+
+function state_create_device(device_id)
+	if state_cache[device_id] then
+		return state_cache[device_id]
+	else
+		local state = { }
+		state.ctx = util.clone(state_ctx):descend(os.getenv("RECREATE") and true or false, { "device", device_id })
+		state.last_timestamp = util.tonumber(state.ctx:get("last-timestamp"))
+		state.config = dkjson.decode(state.ctx:get("config") or "{}")
+		state_cache[device_id] = state
+		return state
+	end
+end
+
+function state_reset_device(device_id)
+	state_cache[device_id] = nil
+end
+
+function state_save_all()
+	for device_id, state in pairs(state_cache) do
+		if state.last_timestamp_uncommitted then
+			state.ctx:set("last-timestamp", tostring(state.last_timestamp_uncommitted))
+		end
+		state.ctx:set("config", dkjson.encode(state.config, { indent = true }))
+	end
+end
+
+function ir_measurement_is_recent(ctx)
+	local state = state_create_device(get_device_id(ctx))
+	local measurement_timestamp = util.tonumber(ctx:get("timestamp"))
+
+	if not state.last_timestamp or measurement_timestamp > state.last_timestamp then
+		state.last_timestamp_uncommitted = measurement_timestamp
+		dbg("Measurement at subpath '%s' is recent (%d > %d)", ctx.path, measurement_timestamp, state.last_timestamp or -1)
+		return true
+	else
+		dbg("Measurement at subpath '%s' is OLD (%d <= %d)", ctx.path, measurement_timestamp, state.last_timestamp or -1)
+		return false
+	end
+end
 
 ---------------------------------------------------------------------------------------------------
 -- build the intermediate representation
 ---------------------------------------------------------------------------------------------------
 
 function ir_create_device(ctx)
-	local device_id = string.format("%s#%s", ctx:get("device"), ctx:get("marker"))
+	local device_id = get_device_id(ctx)
 
 	if ir_buffer[device_id] then
 		return ir_buffer[device_id]
@@ -28,6 +77,7 @@ function ir_create_device(ctx)
 		colors = { }, -- traces, indexed by color
 		auxiliary = { }, -- traces, indexed by _type
 		id = device_id,
+		host = ctx:get("device"),
 		name = string.format("Marking unit %s on host %s", ctx:get("marker"), ctx:get("device"))
 	}
 
@@ -142,8 +192,13 @@ for subpath, mode, state in util.dir(ctx.root, true) do
 		-- get context for the subpath
 		subpath_ctx = dir_generate_context(ctx, state.pieces)
 
-		-- process the measurement
-		ir_add_usage_point(subpath_ctx)
+		if ir_measurement_is_recent(subpath_ctx) then
+			-- process the measurement and continue on to supplies
+			ir_add_usage_point(subpath_ctx)
+		else
+			-- do not descend further
+			util.dir_prune(state)
+		end
 	end
 end
 
@@ -360,11 +415,10 @@ end
 function render_device(ir_device)
 	local json_output = { data = { } }
 
-	local config_device_ctx = util.clone(config_ctx):descend(os.getenv("RECREATE") and true or false, { "device", ir_device.id })
-
 	-- We keep our config in the JSON (and not in the disk format directly) to achieve transactional semantics
 	-- by writing JSON back to disk only in case of successful send.
-	local config = dkjson.decode(config_device_ctx:get("config") or "") or { }
+	local device_state = state_create_device(ir_device.id)
+	local config = device_state.config
 
 	if not config.plot_created then
 		-- create basic layout of the plot
@@ -472,13 +526,15 @@ function render_device(ir_device)
 	if response then
 		-- we've done, write back the config mapping
 		config.plot_created = true
-		config_device_ctx:set("config", dkjson.encode(config, { indent = true }))
+	else
+		-- tell that we don't want to save changes in mappings
+		state_reset_device(ir_device.id)
 	end
 end
 
 function plotly_request(origin, args, kwargs)
-	local username = config_ctx:get("username")
-	local api_key = config_ctx:get("api_key")
+	local username = state_ctx:get("username")
+	local api_key = state_ctx:get("api_key")
 	local data = { }
 
 	table.insert(data, "un=" .. username)
@@ -514,3 +570,5 @@ end
 for i, ir_device in pairs(ir_buffer) do
 	render_device(ir_device)
 end
+
+state_save_all()
