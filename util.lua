@@ -25,10 +25,18 @@ if os.getenv("FRAMEWORK_DEBUG") then
 		end
 	end, "cr")
 
+	function util.caller()
+		return dbg_info[#dbg_info - 2] or "(top level)"
+	end
+
 	function util.dbg(fmt, ...)
-		return printf("DBG [%-20s]: " .. fmt, dbg_info[#dbg_info - 1] or "(top level)", ...)
+		return printf("DBG [%-20s]: " .. fmt, util.caller(), ...)
 	end
 else
+	function util.caller()
+		return "(not available)"
+	end
+
 	function util.dbg(fmt, ...)
 	end
 end
