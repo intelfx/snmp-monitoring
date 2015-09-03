@@ -327,7 +327,9 @@ function bind_to_axis(json_output, config, axis_id, trace_id, properties)
 			assert(config_axis.unit == config_trace.unit, string.format("Axis '%s' changed unit from '%s' to '%s' (of trace '%s')", axis_id, config_axis.unit, config_trace.unit, trace_id))
 		end
 
-		json_axis = { }
+		json_axis = {
+			type = config_axis.json_fields.type -- apparently needs to be re-specified each time
+		}
 	end
 
 	if properties.is_y then
