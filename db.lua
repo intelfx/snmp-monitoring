@@ -31,14 +31,10 @@ end
 local __db_read = function(ctx)
 	__db_check(ctx)
 
-	dbg("reading path %s", ctx.path)
-
 	local path_abs = ctx:path_full()
 	for key in lfs.dir(path_abs) do
 		local subpath_abs = util.join(path_abs, key)
 		if lfs.attributes(subpath_abs, "mode") == "file" then
-			dbg("reading key %s/%s", ctx.path, key)
-
 			assert (not ctx.entries[key])
 			ctx.entries[key] = util.read_all(subpath_abs)
 		end
@@ -90,8 +86,6 @@ function db.descend(ctx, purge, ...)
 
 	local n = select("#", ...)
 
-	dbg("descending from %s, %d items to go", ctx.path or "", n or 0)
-
 	for i, entry in ipairs { ... } do
 		assert(util.is_table(entry, 2))
 
@@ -99,17 +93,13 @@ function db.descend(ctx, purge, ...)
 		assert(util.is_string(key))
 		assert(util.is_string(value))
 
-		dbg("descending to %s=%s", key, value)
-
 		local new_path = ctx:path_with(key .. "=" .. value)
 		local new_path_abs = ctx:root_with(new_path)
 
 		local new_path_mode = lfs.attributes(new_path_abs, "mode")
 		if new_path_mode then
-			dbg("descending to %s %s", new_path_mode, new_path_abs)
 			assert(new_path_mode == "directory")
 		else
-			dbg("creating directory %s", new_path_abs)
 			lfs.mkdir(new_path_abs)
 		end
 
