@@ -111,6 +111,7 @@ function ir_create_supply_in(ctx, tbl, index)
 	util.assign_assert(supply, "description", ctx:get("description"))
 	util.assign_assert(supply, "unit", ctx:get("value.unit"))
 	util.assign_assert(supply, "max", assert(tonumber(ctx:get("max"))))
+	util.assign_assert(supply, "is_imprecise", true) -- assume all supply level counters to be imprecise
 
 	return supply
 end
@@ -219,7 +220,8 @@ function ir_postprocess_trace(trace)
 	-- TODO: remove consecutive identical measurements for traces with imprecise units
 	-- (e. g. percent, but not impressions)
 
-	if util.in_set(trace.unit, { "percent" }) then
+	if trace.is_imprecise or
+	   util.in_set(trace.unit, { "percent" }) then
 		local last_v
 		local new_data = { }
 		for i, v in ipairs(trace.data) do
