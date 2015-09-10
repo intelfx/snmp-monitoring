@@ -222,24 +222,27 @@ function ir_postprocess_trace(trace)
 
 	if trace.is_imprecise or
 	   util.in_set(trace.unit, { "percent" }) then
-		local last_v
+		local prev, victim
 		local new_data = { }
-		for i, v in ipairs(trace.data) do
-			local next_v = trace.data[i+1]
-
-			if last_v and last_v.value == v.value and (next_v and next_v.value <= v.value) then
-				-- remove consecutive identical measurements if they are expected to be imprecise/rounded,
-				-- so we get a slope which spans over all the consecutive measurements instead of a sharp edge.
-				-- however, do not do this if we are followed by a positive front (which, for supplies, would mean a refill),
-				-- or if we are the last measurement in series.
+		for i, current in ipairs(trace.data) do
+			-- remove consecutive identical measurements if they are expected to be imprecise/rounded,
+			-- so we get a slope which spans over all the consecutive measurements instead of a sharp edge.
+			-- however, do not do this if we are followed by a positive front (which, for supplies, would mean a refill).
+			if prev and victim and prev.value == victim.value and victim.value >= current.value then
 				local function fmtd(arg) return os.date("%F %T", arg/1000) end
-				dbg("last %s-> %s, removing %s -> %s, next %s -> %s",
-				    fmtd(last_v.timestamp), last_v.value, fmtd(v.timestamp), v.value, next_v and fmtd(next_v.timestamp) or "<n/a>", next_v and next_v.value or "<n/a>")
+				dbg("last %s -> %s, removing %s -> %s, next %s -> %s",
+				    fmtd(prev.timestamp), prev.value, fmtd(victim.timestamp), victim.value, fmtd(current.timestamp), current.value)
+				victim = current
 			else
-				table.insert(new_data, v)
-				last_v = v
+				table.insert(new_data, prev)
+				prev, victim = victim, current
 			end
 		end
+
+		-- insert the last two measurements without any checks.
+		-- we don't do removal on the last measurement, anyway.
+		table.insert(new_data, prev)
+		table.insert(new_data, victim)
 
 		assert(#new_data <= #trace.data)
 		trace.data = new_data
