@@ -108,7 +108,7 @@ function ir_create_supply_in(ctx, tbl, index)
 	util.assign_assert(supply, "id", ctx:get("stable_name"))
 	util.assign_assert(supply, "type", ctx:get("type"))
 	util.assign_assert(supply, "color", ctx:get("color"))
-	util.assign_assert(supply, "description", ctx:get("description"))
+	-- util.assign_assert(supply, "description", ctx:get("description")) -- it changes sometimes
 	util.assign_assert(supply, "unit", ctx:get("value.unit"))
 	util.assign_assert(supply, "max", assert(tonumber(ctx:get("max"))))
 	util.assign_assert(supply, "is_imprecise", true) -- assume all supply level counters to be imprecise
